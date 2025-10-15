@@ -11,20 +11,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-14]
+        os: [ubuntu-latest, macos-14, macos-13, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - name: Install build dependencies
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            brew update
-            brew install gcc
-          else
-            sudo apt-get update
-            sudo apt-get install -y gfortran
-          fi
+          sudo apt-get update
+          sudo apt-get install -y gfortran make
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install gcc
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: UCRT64
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc-fortran
+            mingw-w64-ucrt-x86_64-make
       - name: Compile HOLE
+        if: runner.os != 'Windows'
         run: make -C src
+      - name: Compile HOLE (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          make -C src
+          if [ -f exe/hole.exe ]; then
+            cp exe/hole.exe exe/hole
+          fi
       - name: Upload executables
         uses: actions/upload-artifact@v4
         with:
@@ -36,25 +55,38 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-14]
+        os: [ubuntu-latest, macos-14, macos-13]
     needs: build
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            brew update
-            brew install gcc
-          else
-            sudo apt-get update
-            sudo apt-get install -y gfortran
-          fi
+          sudo apt-get update
+          sudo apt-get install -y gfortran
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install gcc
+      - name: Install Python tooling
+        shell: bash
+        run: |
+          set -euo pipefail
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
           export PATH="${HOME}/.cargo/bin:${PATH}"
           uv venv .venv
           uv pip install --python .venv pytest
-      - name: Build for tests
-        run: make -C src
+      - name: Prepare macOS legacy layout
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "${HOME}/hole2"
+          rsync -a rad/ "${HOME}/hole2/rad/"
+      - name: Download built executables
+        uses: actions/download-artifact@v4
+        with:
+          name: hole-${{ matrix.os }}
+          path: exe
       - name: Run example regression tests
         run: uv run --python .venv pytest
