@@ -47,11 +47,14 @@ jobs:
             brew install gcc
           else
             sudo apt-get update
-            sudo apt-get install -y gfortran python3-pip
+            sudo apt-get install -y gfortran
           fi
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pytest
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
+          export PATH="${HOME}/.cargo/bin:${PATH}"
+          uv venv .venv
+          uv pip install --python .venv pytest
       - name: Build for tests
         run: make -C src
       - name: Run example regression tests
-        run: python3 -m pytest
+        run: uv run --python .venv pytest
