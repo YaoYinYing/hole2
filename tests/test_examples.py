@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 import subprocess
+import os
+import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -12,10 +14,38 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 HOLE_EXE = ROOT / "exe" / "hole"
 RADII_FILE = ROOT / "rad" / "simple.rad"
+LEGACY_ROOT = Path.home() / "hole2"
+
+
+def _ensure_legacy_layout() -> None:
+    """Ensure legacy hard-coded paths resolve for the HOLE binary."""
+
+    legacy_rad = LEGACY_ROOT / "rad"
+    if legacy_rad.exists():
+        return
+
+    LEGACY_ROOT.mkdir(parents=True, exist_ok=True)
+
+    # Attempt to mirror the repository under ~/hole2 so the binary can
+    # resolve its historical lookups into ~/hole2/rad/*. The macOS CI
+    # runners are case-sensitive enough that a simple symlink suffices and
+    # avoids duplicating the checkout, but fall back to a copy if symlinks
+    # are unavailable.
+    try:
+        if LEGACY_ROOT.is_dir() and not LEGACY_ROOT.is_symlink():
+            # The directory was just created above and is empty; replace it
+            # with a symlink that mirrors the repository checkout.
+            LEGACY_ROOT.rmdir()
+        os.symlink(ROOT, LEGACY_ROOT, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        if not LEGACY_ROOT.exists():
+            shutil.copytree(ROOT, LEGACY_ROOT)
 
 
 def _require_binary() -> Path:
     """Ensure the HOLE binary exists before running the tests."""
+
+    _ensure_legacy_layout()
 
     if not HOLE_EXE.exists():  # pragma: no cover - defensive guard
         pytest.fail(
