@@ -85,6 +85,11 @@ def _run_example(
     return result.stdout
 
 
+MIN_RADIUS_PATTERN = re.compile(
+    r"Minimum radius found[^0-9]*([0-9.]+)", re.IGNORECASE | re.MULTILINE
+)
+
+
 TAG_PATTERN = re.compile(
     r"\(TAG\s+\d+\s+Rmin=\s+([0-9.]+)\s+Gmacro=\s+([0-9.]+)(?:\s+Conn_Gmacro=\s+([0-9.\-]+))?",
     re.MULTILINE,
@@ -126,7 +131,7 @@ def test_examples_follow_documented_outputs(example: str, tmp_path: Path) -> Non
 
     assert "HOLE: normal completion" in stdout
 
-    min_radius_match = re.search(r"Minimum radius found:\s+([0-9.]+)", stdout)
+    min_radius_match = MIN_RADIUS_PATTERN.search(stdout)
     assert min_radius_match, "Minimum radius not reported"
     min_radius = float(min_radius_match.group(1))
     assert min_radius == pytest.approx(case["min_radius"], abs=1e-3)
