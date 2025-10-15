@@ -16,6 +16,17 @@ work for you and you can say
      source ../source.apache
      make
 
+On Apple silicon versions of macOS the system toolchain does not include
+`gfortran`. Install it via [Homebrew](https://brew.sh/) with
+
+```
+brew install gcc
+```
+
+The supplied Makefile detects macOS and automatically uses the dynamic
+Fortran runtime, so no additional flags are required once `gfortran` is
+available on your `PATH`.
+
 
 If you have another Fortran compiler then you need to *always set the
 `FC` variable when you invoke `make`*. In the example below I use
