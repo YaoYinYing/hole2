@@ -85,11 +85,7 @@ jobs:
 
   test:
     name: Tests (${{ matrix.os }})
-    needs:
-      - build-linux
-      - build-macos-14
-      - build-macos-13
-    if: ${{ needs[matrix.build_job].result == 'success' }}
+    needs: ${{ matrix.build_job }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
