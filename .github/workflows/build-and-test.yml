@@ -74,7 +74,7 @@ jobs:
         shell: msys2 {0}
         run: |
           mingw32-make -C src
-          if [ -f exe/hole.exe ]; then
+          if [ -f exe/hole.exe ] && [ ! -f exe/hole ]; then
             cp exe/hole.exe exe/hole
           fi
       - name: Upload executables
