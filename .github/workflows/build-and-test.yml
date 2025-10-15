@@ -40,7 +40,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          make -C src
+          mingw32-make -C src
           if [ -f exe/hole.exe ]; then
             cp exe/hole.exe exe/hole
           fi
