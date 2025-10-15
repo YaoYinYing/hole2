@@ -17,12 +17,32 @@ DATA_DIR:= $(PREFIX)/share/hole2#
 #     $OPTFLAGS set to complier flags
 #     OPTFLAGS = -O -c -w -mp1 -r8 
 #
-FC := gfortran
+UNAME_S := $(shell uname -s)
+
+ifeq ($(origin FC), default)
+  FC := gfortran
+endif
 # FC is used by makver.exe
-CC := gcc
-FFLAGS += -fd-lines-as-comments -fbackslash -std=legacy -static-libgfortran
-CFLAGS += -static-libgfortran
-MACHINE_DEP := machine_dep.g77
+ifeq ($(origin CC), default)
+  CC := cc
+endif
+
+FFLAGS ?=
+LFLAGS ?=
+CFLAGS ?=
+
+FFLAGS += -fd-lines-as-comments -fbackslash -std=legacy
+MACHINE_DEP ?= machine_dep.g77
+
+ifeq ($(UNAME_S),Darwin)
+# macOS (including Apple silicon) does not ship static libgfortran,
+# so rely on the dynamic runtime provided by the Homebrew toolchain.
+  CFLAGS +=
+else
+  FFLAGS += -static-libgfortran
+  LFLAGS += -static-libgfortran
+  CFLAGS += -static-libgfortran
+endif
 LIB_NAME := hole.a
 AR := ar
 RANLIB := ranlib
